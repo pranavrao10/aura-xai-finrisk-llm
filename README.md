@@ -22,7 +22,7 @@ The system predicts the likelihood of loan default and also generates human read
 
 ---
 
-### How it Works:
+## How it Works:
 
 1. **Data Collection**: Acquire credit datasets from Lending Club.
 2. **Preprocessing**: Clean, impute, balance classes (SMOTE).
