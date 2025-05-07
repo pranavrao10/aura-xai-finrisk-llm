@@ -22,22 +22,7 @@ The system predicts the likelihood of loan default and also generates human read
 
 ---
 
-## How It Works / Methodology / Pipeline
-
-```mermaid
-graph TD;
-    A[Data Acquisition] --> B[Data Cleaning & Preprocessing];
-    B --> C[Exploratory Data Analysis & Feature Engineering];
-    C --> D[Model Development (LogReg/XGB/NN)];
-    D --> E[SHAP & LIME Integration];
-    E --> F[LLM Natural Language Generator];
-    F --> G[RAG with Financial Regulations];
-    G --> H[FastAPI Backend];
-    H --> I[Streamlit/Gradio Frontend];
-    I --> J[Evaluation & Feedback];
-```
-
-### Steps:
+### How it Works:
 
 1. **Data Collection**: Acquire credit datasets from Lending Club.
 2. **Preprocessing**: Clean, impute, balance classes (SMOTE).
