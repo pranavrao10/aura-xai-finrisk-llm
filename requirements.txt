@@ -1,0 +1,49 @@
+#Core Data Science & EDA
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+jupyter
+notebook
+tqdm
+
+#Machine Learning Models
+xgboost
+lightgbm
+torch
+
+#Explainable AI (XAI)
+shap
+lime
+
+
+#NLP+LLMs+Natural Language Justification
+transformers
+sentence-transformers
+datasets
+accelerate
+spacy  
+
+#Retrieval-Augmented Generation(RAG)
+langchain
+chromadb  
+python-dotenv
+
+#API & Interface(Backend+Frontend)
+fastapi
+uvicorn
+streamlit
+gradio
+
+#Serialization & Utilities
+joblib
+pickle-mixin
+jsonlines
+
+# Dev/Testing/Deployment
+pytest
+coverage
+httpx
+pydantic
+openpyxl  
