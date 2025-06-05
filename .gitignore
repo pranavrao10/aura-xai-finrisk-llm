@@ -1,56 +1,63 @@
-#Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
-
-#Virtual environment
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.egg-info/
+.Python
+env/
 venv/
-.env/
-.env.*
+.venv/
+dist/
+build/
+.ipynb_checkpoints/
 
-#VSCode
-.vscode/
 
-#Jupyter Notebooks
-.ipynb_checkpoints
-
-#Data files
-*.csv
-*.tsv
-*.xls
-*.xlsx
-*.parquet
-*.feather
-*.json
-data/
-datasets/
-
-#Logs
-*.log
-
-#Model artifacts
-*.h5
-*.pt
-*.pkl
-*.joblib
-*.sav
-
-#Streamlit
-.streamlit/
-
-#Docker
-*.db
-*.sqlite3
-*.pid
-*.sock
-*.log
-
-#OS generated
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.log
 
-#Test outputs
-htmlcov/
-coverage.xml
-.cache/
-pytest_cache/
+*.nbconvert.ipynb
+
+data/raw/
+data/interim/
+data/tmp/
+!data/processed/**              
+
+
+*.zip
+*.tar.gz
+*.7z
+
+models/*.joblib
+models/*.pkl
+models/*.h5
+!models/lgbm_v*.joblib
+!models/surrogate_lr_v*.joblib
+!models/params_lightgbm*.json
+!models/shap_topidx_v*.joblib
+
+outputs/
+*.png               
+*.svg
+*.pdf
+*.sqlite
+optuna_*.db
+
+conda-meta/
+*.conda
+*.lock
+
+.env
+.env.*
+*.json.key
+*.pem
+*.crt
+
+*.dvc
+*.lfsconfig
