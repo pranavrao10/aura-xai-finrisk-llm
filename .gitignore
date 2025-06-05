@@ -5,53 +5,69 @@ __pycache__/
 *.so
 *.dylib
 *.egg-info/
-.Python
+build/
+dist/
+*.whl
+
+
 env/
 venv/
 .venv/
-dist/
-build/
-.ipynb_checkpoints/
+.Python
 
 
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
 .idea/
 .vscode/
+*.swp
+*.swo
 *.log
 
+.ipynb_checkpoints/
 *.nbconvert.ipynb
+
 
 data/raw/
 data/interim/
 data/tmp/
-!data/processed/**              
-
-
+!data/processed/**          # allow curated <=10 MB artefacts
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.parquet
+*.feather
+*.json
 *.zip
 *.tar.gz
 *.7z
 
+*.npz
+*.npy
+!data/processed/*.npz       # keep small CSR/mini matrices
+!models/shap_topidx_v*.npz
+
 models/*.joblib
 models/*.pkl
+models/*.pt
 models/*.h5
+models/*.onnx
+models/*.sav
 !models/lgbm_v*.joblib
 !models/surrogate_lr_v*.joblib
 !models/params_lightgbm*.json
 !models/shap_topidx_v*.joblib
 
+optuna_*.db
+*.sqlite
+*.db
+
 outputs/
-*.png               
+*.png
 *.svg
 *.pdf
-*.sqlite
-optuna_*.db
-
-conda-meta/
-*.conda
-*.lock
+!reports/figs/*.png         # curated publishable plots
 
 .env
 .env.*
