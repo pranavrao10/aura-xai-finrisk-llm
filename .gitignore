@@ -58,6 +58,8 @@ models/*.sav
 !models/surrogate_lr_v*.joblib
 !models/params_lightgbm*.json
 !models/shap_topidx_v*.joblib
+!models/logreg_v1_2025-06-05*.joblib
+
 
 optuna_*.db
 *.sqlite
