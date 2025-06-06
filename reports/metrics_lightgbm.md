@@ -1,22 +1,22 @@
-# LightGBM – 2025-06-05
+# LightGBM – 2025-06-06
 
 | Metric | Value |
 |--------|-------|
-| ROC-AUC | **0.9612** |
-| PR-AUC  | **0.872** |
-| Accuracy| **0.894** |
+| ROC-AUC | **0.9586** |
+| PR-AUC  | **0.863** |
+| Accuracy| **0.892** |
 
 <details><summary>Classification report</summary>
 
 ```
               precision    recall  f1-score   support
 
-           0      0.978     0.887     0.931    215350
-           1      0.671     0.922     0.776     53712
+           0      0.978     0.884     0.929    215350
+           1      0.665     0.921     0.772     53712
 
-    accuracy                          0.894    269062
-   macro avg      0.825     0.904     0.854    269062
-weighted avg      0.917     0.894     0.900    269062
+    accuracy                          0.892    269062
+   macro avg      0.822     0.903     0.851    269062
+weighted avg      0.916     0.892     0.898    269062
 
 ```
 </details>
