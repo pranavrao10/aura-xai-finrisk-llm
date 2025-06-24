@@ -14,9 +14,9 @@ The system predicts the likelihood of loan default and also generates human read
 
 - **Credit Risk Prediction** using Logistic Regression (Baseline Model) and LightGBM
 - **Model Explainability** via SHAP
-- **Natural Language Explanations** powered by fine tuned LLMs
+- **Natural Language Explanations** powered by LLMs via prompt engineering
 - **Policy Grounding** through Retrieval-Augmented Generation (RAG)
-- **User Interface** built with Streamlit or Gradio
+- **User Interface** built with Streamlit
 - **FastAPI Backend & Dockerized Deployment**
 - **Evaluation Framework** to measure both accuracy and explainability
 
@@ -116,7 +116,7 @@ The system predicts the likelihood of loan default and also generates human read
 
 - Most important features influencing loan default
 - Comparison between black-box vs. explainable models
-- Quality and clarity of SHAP/LIME explanations
+- Quality and clarity of SHAP explanations
 - Usefulness of LLM + RAG in legal justification generation
 - Feedback from mock users and potential compliance stakeholders
 
