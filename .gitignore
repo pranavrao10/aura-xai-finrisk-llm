@@ -42,6 +42,9 @@ data/tmp/
 *.zip
 *.tar.gz
 *.7z
+/chroma_store/
+/logs
+/data/reg_docs/*
 
 *.npz
 *.npy

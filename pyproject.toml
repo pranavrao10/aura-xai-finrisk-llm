@@ -1,8 +1,15 @@
 [project]
-name = "aura"                
+name = "aura"
 version = "0.1.0"
 description = "XAI credit-risk pipeline"
+authors = [{name = "Pranav Rao"}]
 
 [build-system]
 requires = ["setuptools>=65", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# (intentionally left empty here)
+
+[tool.setuptools.packages.find]
+where = ["."]
