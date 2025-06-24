@@ -10,7 +10,7 @@ dist/
 *.whl
 
 
-env/
+.env
 venv/
 .venv/
 .Python
@@ -57,11 +57,18 @@ models/*.pt
 models/*.h5
 models/*.onnx
 models/*.sav
-!models/lgbm_v*.joblib
-!models/surrogate_lr_v*.joblib
-!models/params_lightgbm*.json
-!models/shap_topidx_v*.joblib
-!models/logreg_v1_2025-06-05*.joblib
+!models/lgbm_v1.joblib
+!models/logreg_v1_2025-06-05.joblib
+!models/params_lightgbm_v1.json
+!models/shap_topidx_v1.joblib
+!models/shap_topidx_v2.joblib
+!models/shap_topidx_v3.joblib
+!models/surrogate_lr_v1.joblib
+!models/surrogate_lr_v2.joblib
+!models/surrogate_top5_pipeline.joblib
+!models/preprocessor_top5.joblib
+!models/preprocessor.joblib
+!models/vt.joblib
 
 
 optuna_*.db
@@ -75,10 +82,20 @@ outputs/
 !reports/figs/*.png         # curated publishable plots
 
 .env
-.env.*
 *.json.key
+.env.*
+*.key
 *.pem
 *.crt
+.secret
+.secrets/
+
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.tmp
+*~
 
 *.dvc
 *.lfsconfig
