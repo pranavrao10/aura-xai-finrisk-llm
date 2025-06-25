@@ -1,49 +1,52 @@
-#Core Data Science & EDA
-numpy
-pandas
-scikit-learn
-matplotlib
-seaborn
-jupyter
-notebook
-tqdm
+# Core Data Science & EDA
+numpy>=1.23
+pandas>=2.0
+scikit-learn>=1.3,<2.0
+matplotlib>=3.5
+seaborn>=0.12
+tqdm>=4.65
 
-#Machine Learning Models
-xgboost
-lightgbm
-torch
+# Notebooks
+jupyterlab>=4.0
 
-#Explainable AI (XAI)
-shap
-lime
+# Machine Learning Models
+xgboost>=1.7
+lightgbm>=4.0
 
+# Explainable AI (XAI)
+shap>=0.42
+lime>=0.2
 
-#NLP+LLMs+Natural Language Justification
-transformers
-sentence-transformers
-datasets
-accelerate
-spacy  
+# NLP, LLMs, Natural Language Justification
+transformers>=4.36
+sentence-transformers>=2.3
+datasets>=2.15
+accelerate>=0.23
+spacy>=3.7
 
-#Retrieval-Augmented Generation(RAG)
-langchain
-chromadb  
-python-dotenv
+# Retrieval-Augmented Generation (RAG)
+langchain>=0.1.0
+chromadb>=0.4.24
+python-dotenv>=1.0
 
-#API & Interface(Backend+Frontend)
-fastapi
-uvicorn
-streamlit
-gradio
+# API & Interface (Backend+Frontend)
+fastapi>=0.110
+uvicorn>=0.25
+streamlit>=1.32
 
-#Serialization & Utilities
-joblib
-pickle-mixin
-jsonlines
+# Serialization & Utilities
+joblib>=1.3
 
 # Dev/Testing/Deployment
-pytest
-coverage
-httpx
-pydantic
-openpyxl  
+pytest>=8.1
+coverage>=7.2
+httpx>=0.27
+pydantic>=2.0
+openpyxl>=3.1
+
+# Formatting & Linting (optional)
+black
+ruff
+
+# LLM APIs (optional)
+openai
