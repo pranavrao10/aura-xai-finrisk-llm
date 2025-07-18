@@ -97,10 +97,10 @@ The system predicts the likelihood of loan default and also generates human read
 
 > _To be updated after model training and evaluation_
 
-| Model         | Accuracy | Precision | Recall | F1 Score | ROC-AUC | PR-AUC |
+| Model         | PR_AUC | Precision | Recall | F1 Score | ROC-AUC | Accuracy |
 | ------------- | -------- | --------- | ------ | -------- | ------- | ------ |
 | Logistic Reg. | `0.90`   | `0.69`    | `0.90` | `0.78`   | `0.95`  | `0.84` |
-| LightGBM      | `0.89`   | `0.66`    | `0.92` | `0.77`   | `0.95`  | `0.86` |
+| LightGBM      | `0.294`  | `0.243`   | `0.702`| `0.361`  | `0.703` | `0.609`|
 | Surrogate LR  | `0.90`   | `0.69`    | `0.89` | `0.78`   | `0.95`  | `0.84` |
 
 ### Explainability Evaluation:

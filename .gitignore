@@ -53,6 +53,7 @@ data/tmp/
 
 models/*.joblib
 models/*.pkl
+*.pkl
 models/*.pt
 models/*.h5
 models/*.onnx
