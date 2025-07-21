@@ -1,91 +1,136 @@
-import pandas as pd
-import os
-import openai
-from src.app.config import feature_names, user_friendly
-from src.models.predict import predict_single
-from src.explain.explainer import generate_response
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from __future__ import annotations
+import os, json, argparse, sys
+from rich import print as rprint
+from rich.console import Console
+from rich.panel import Panel
+from src.app.config import ui_features, user_friendly, decision_threshold, near_threshold_band
+from src.models.predict import predict_with_explanations, save_prediction_log
+from src.explain.explainer import generate_explanation
+
+console = Console()
+
+valid_grades = set("ABCDEFG")
+valid_terms  = {36, 60}          
+fico_min, fico_max = 300, 850
 
 defaults = {
-    "last_fico_range_high": 700,
-    "last_fico_range_low": 695,
-    "term": " 36 months",              
-    "debt_settlement_flag": "N",        
-    "emp_length_na": 0                  
+    "grade": "B",
+    "term": 36,
+    "acc_open_past_24mths": 5,
+    "dti": 15.0,
+    "fico_mid": 700
 }
 
+def coerce(feature: str, raw: str):
+    if feature == "grade":
+        g = raw.upper()
+        if g not in valid_grades:
+            raise ValueError(f"Grade must be a letter between A-G. Got '{g}'")
+        return g
+    if feature == "term":
+        try:
+            n = int(str(raw).strip().split()[0])
+        except Exception:
+            raise ValueError(f"Term must be 36 or 60. Got '{raw}'")
+        if n not in valid_terms:
+            raise ValueError(f"Term must be 36 or 60. Got '{raw}'")
+        return n
+    if feature == "acc_open_past_24mths":
+        try:
+            n = int(raw)
+        except Exception:
+            raise ValueError(f"Cannot be negative or non-integer. Got '{raw}'")
+        if n < 0:
+            raise ValueError(f"Cannot be negative or non-integer. Got '{raw}'")
+        return n
+    if feature == "dti":
+        try:
+            d = float(raw)
+        except Exception:
+            raise ValueError(f"DTI must be numeric and cannot be negative (ex: 15 or 15.2). Got '{raw}'")
+        if d < 0:
+            raise ValueError(f"DTI must be numeric and cannot be negative (ex: 15 or 15.2). Got '{raw}'")
+        if d is not float(d):
+            raise ValueError(f"DTI must be numeric and cannot be negative (ex: 15 or 15.2). Got '{raw}'")
+        return d
+    if feature == "fico_mid":
+        try:
+            f = int(raw)
+        except Exception:
+            raise ValueError(f"FICO must be between 300 and 850. Got '{raw}'")
+        if not (fico_min <= f <= fico_max):
+            raise ValueError(f"FICO must be between 300 and 850. Got '{raw}'")
+        return f
+
+    raise ValueError("Unknown feature")
+
+def prompt_input(feature: str):
+    label = user_friendly.get(feature, feature)
+    coerce_ = coerce
+    default = defaults[feature]
+    while True:
+        try:
+            raw = input(f"{label}: ").strip()
+        except Exception as e:
+            rprint(f"[red]‣ {e}. Please enter a valid value.")
+        if raw == "":
+            rprint("[yellow]Blank not accepted. Enter a value.")
+            continue
+        try:
+            val = coerce(feature, raw)
+            return val
+        except Exception as e:
+            rprint(f"[red]Invalid value ({e}). Please re-enter.")
 
 
-def get_user_input():
-    print("\n---Enter Applicant Information---")
-    vals = {}
-    max_tries = 3
-    for feat in feature_names:
-        label = user_friendly.get(feat, feat)
-        tries = 0
+def collect_applicant():
+    rprint("[bold cyan]--- Enter Applicant Information ---")
+    payload = {}
+    for f in ui_features:
+        payload[f] = prompt_input(f)
+    return payload
 
-        while True:
-            val = input(f"{label}: ")
-            val = val.strip()
-            if val == "":
-                val = defaults[feat]
-                break
-            # Type conversions:
-            if feat in ["last_fico_range_high", "last_fico_range_low"]:
-                try:
-                    val_int = int(val)
-                    if 300 <= val_int <= 850:
-                        vals[feat] = val_int
-                        break
-                    else:
-                        raise ValueError
-                except ValueError:
-                    tries += 1
-                    print("Please enter a valid FICO score (integer between 300 and 850).")
-            elif feat == "emp_length_na":
-                try:
-                    val_int = int(val)
-                    if val_int in [0, 1]:
-                        vals[feat] = val_int
-                        break
-                    else:
-                        raise ValueError
-                except ValueError:
-                    tries += 1
-                    print("Please enter 0 or 1 (0 = Employment Length Present, 1 = Missing).")
-            elif feat == "term":
-                if val in ["36", " 36 months", "36 months"]:
-                    vals[feat] = " 36 months"
-                    break
-                elif val in ["60", " 60 months", "60 months"]:
-                    vals[feat] = " 60 months"
-                    break
-                else:
-                    tries += 1
-                    print("Please enter '36' or '60' (months).")
-            elif feat == "debt_settlement_flag":
-                if val.upper() in ["Y", "N"]:
-                    vals[feat] = val.upper()
-                    break
-                else:
-                    tries += 1
-                    print("Please enter 'Y' or 'N'.")
-            if tries >= max_tries:
-                print(f"Too many invalid attempts. Using default: {defaults}")
-                vals[feat] = defaults
-                break
-    return vals
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", type=str, help="JSON payload for applicant")
+    parser.add_argument("--no-llm", action="store_true", help="Skip LLM explanation")
+    args = parser.parse_args()
 
-default_risk_threshold = 0.25
+    if args.json:
+        try:
+            applicant = json.loads(args.json)
+        except Exception as e:
+            rprint(f"[red]Invalid JSON supplied ({e}). Exiting.")
+            sys.exit(1)
+    else:
+        applicant = collect_applicant()
+
+    try:
+        pred_bundle = predict_with_explanations(applicant, max_reasons=5)
+    except Exception as e:
+        rprint(f"[red]Prediction failed: {e}")
+        sys.exit(2)
+
+    save_prediction_log(pred_bundle)
+
+    risk_color = "red" if pred_bundle["risk_class"] == "High" else "green"
+    near_flag = abs(pred_bundle["threshold_delta"]) <= near_threshold_band
+    header = f"[bold {risk_color}]Risk Assessment[/bold {risk_color}]"
+    details = (
+        f"Probability of Default: {pred_bundle['prob_default']:.2%}\n"
+        f"Decision Threshold: {pred_bundle['threshold']:.2%} (policy={pred_bundle['threshold_policy']})\n"
+        f"Above Threshold By: {pred_bundle['threshold_delta']:.2%}\n"
+        f"Near Threshold: {near_flag}"
+    )
+    console.print(Panel(details, title=header, border_style=risk_color))
+
+    if args.no_llm:
+        rprint("[yellow]LLM explanation skipped (--no-llm).")
+        return
+
+    explanation = generate_explanation(pred_bundle)
+    rprint("\n[bold cyan]Explanation[/bold cyan]")
+    rprint(explanation["narrative"])
 
 if __name__ == "__main__":
-    applicant = get_user_input()
-    pred, prob = predict_single(applicant)
-    high_risk = prob >= default_risk_threshold
-    print(
-        f"Model prediction: {'High Risk of Default' if high_risk else 'Low Risk of Default'} "
-        f"(Probability of default: {prob:.2%})"
-    )
-    explanation = generate_response(applicant, int(high_risk), prob)
-    print("\n--- Reasoning ---")
-    print(explanation)
+    main()
