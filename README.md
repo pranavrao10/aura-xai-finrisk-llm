@@ -215,11 +215,12 @@ No protected classes are used; explanations avoid causal language (“associated
 ## Testing
 
 We use pytest with minimal yet critical coverage:
--test_validate.py – input edge cases (grade, negatives, bounds).
--test_percentiles.py – min/max, engineered feature mapping.
--test_predict.py – mocks predict_proba for deterministic outputs.
--test_explainer_fallback.py – forces LLM error to test graceful degradation.
--test_threshold_logic.py – confirm threshold & near-threshold flag behavior.
+
+- test_validate.py – input edge cases (grade, negatives, bounds).
+- test_percentiles.py – min/max, engineered feature mapping.
+- test_predict.py – mocks predict_proba for deterministic outputs.
+- test_explainer_fallback.py – forces LLM error to test graceful degradation.
+- test_threshold_logic.py – confirm threshold & near-threshold flag behavior.
 
 Run:
 
