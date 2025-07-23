@@ -31,7 +31,7 @@ Thumbs.db
 data/raw/
 data/interim/
 data/tmp/
-!data/processed/**          # allow curated <=10 MB artefacts
+!data/processed/**          
 *.csv
 *.tsv
 *.xls
@@ -48,7 +48,7 @@ data/tmp/
 
 *.npz
 *.npy
-!data/processed/*.npz       # keep small CSR/mini matrices
+!data/processed/*.npz       
 !models/shap_topidx_v*.npz
 
 models/*.joblib
@@ -80,7 +80,7 @@ outputs/
 *.png
 *.svg
 *.pdf
-!reports/figs/*.png         # curated publishable plots
+!reports/figs/*.png         
 
 .env
 *.json.key
