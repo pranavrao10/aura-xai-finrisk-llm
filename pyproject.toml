@@ -1,15 +1,90 @@
 [project]
 name = "aura"
 version = "0.1.0"
+readme = "README.md"
 description = "XAI credit-risk pipeline"
+license = { text = "MIT" }
 authors = [{name = "Pranav Rao"}]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-learn>=1.2",
+    "joblib>=1.2",
+    "shap>=0.43",
+    "scipy>=1.10",
+    "rich>=13.0",
+    "openai>=1.6",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.25",
+    "httpx>=0.24"
+]
+ui = [
+    "streamlit>=1.31"
+]
+rag = [
+    "chromadb>=0.4",
+    "tiktoken>=0.5"
+]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
+
 
 [build-system]
-requires = ["setuptools>=65", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# (intentionally left empty here)
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
+exclude = ["tests*", "notebooks*"]
+
+[tool.setuptools.package-data]
+"aura" = ["models/**", "logs/**", "rag/**", "assets/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --disable-warnings --cov=src --cov-report=term-missing"
+filterwarnings = [
+    "ignore::DeprecationWarning"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/aura"]
+omit = [
+  "src/aura/rag/*",         
+  "src/aura/**/__main__.py"
+]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+precision = 1
+
+[tool.ruff]
+select = ["E", "F", "I"]
+ignore = ["E501"]   
+src = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+strict_optional = true
+
+[project.scripts]
+aura-cli = "aura.app.main:main"
+
+[project.urls]
+homepage = "https://github.com/pranavrao10/aura-xai-finrisk-llm"
+issues = "https://github.com/pranavrao10/aura-xai-finrisk-llm/issues"

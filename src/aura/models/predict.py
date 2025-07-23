@@ -4,17 +4,13 @@ from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime, timezone
 import scipy.sparse as sp
-from rich import print as rprint
-from src.app.config import (
+from aura.app.config import (
     model_version,
     sur_path,
-    preprocessor_path,
     background_path,
     percentiles_path,
     ui_features,
-    engineered_features_order,
-    reason_codes,
-    display_names,
+    user_friendly,
     decision_threshold,
     threshold_policy,
     near_threshold_band,
@@ -159,7 +155,7 @@ def consolidate_reason(base_feature: str,
                        eng_row: dict) -> dict:
     raw_feature = map_engineered_to_raw(base_feature)
     value = raw_row.get(raw_feature, eng_row.get(base_feature))
-    display = display_names.get(raw_feature, display_names.get(base_feature, raw_feature))
+    display = user_friendly.get(raw_feature, user_friendly.get(base_feature, raw_feature))
     pct_key, pct_val = None, None
     if isinstance(value, (int, float)):
         if base_feature == "fico_mid_sq":
@@ -176,8 +172,7 @@ def consolidate_reason(base_feature: str,
         direction = "↑ risk" if shap_val < 0 else "↓ risk"
     else:
         direction = "↑ risk" if shap_val > 0 else "↓ risk"
-    reason_code = reason_codes.get(base_feature,
-                   reason_codes.get(raw_feature, base_feature.upper()))
+    
     return {
         "feature": display,
         "raw_feature_key": raw_feature,
@@ -185,8 +180,7 @@ def consolidate_reason(base_feature: str,
         "applicant_value": value,
         "percentile": percentile,
         "direction": direction,
-        "shap_contribution": float(shap_val),
-        "reason_code": reason_code
+        "shap_contribution": float(shap_val)
     }
 
 def local_shap(eng_df: pd.DataFrame,
@@ -248,8 +242,6 @@ def local_shap(eng_df: pd.DataFrame,
             a = abs(r["shap_contribution"])
             rel = a / m if m > 0 else 0
             r["magnitude"] = "High" if rel >= 0.60 else "Moderate" if rel >= 0.30 else "Low"
-    for r in reasons:
-        r.pop("reason_code", None)
     return reasons
 
 def predict_with_explanations(applicant_payload: Dict[str,Any], max_reasons=5):

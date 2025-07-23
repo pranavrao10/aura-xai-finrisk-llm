@@ -100,3 +100,4 @@ coverage.xml
 
 *.dvc
 *.lfsconfig
+data/processed/.DS_Store

@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    command: ["./docker/start_api.sh"]
+    container_name: aura_api
+    environment:
+       env_file: .env  
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    # Uncomment to mount changing files without rebuild:
+    # volumes:
+    #   - ./models:/app/models:ro
+    #   - ./logs:/app/logs
+
+  ui:
+    build: .
+    env_file: .env
+    container_name: aura_ui
+    command: ["scripts/start_ui.sh"]
+    environment:
+      AURA_API_URL: "http://api:8000"
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
