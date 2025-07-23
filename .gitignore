@@ -68,7 +68,6 @@ models/*.sav
 !models/optuna_trials_lightgbm_v1.csv
 !models/params_lightgbm_v1.json
 !models/shap_topidx_v1.joblib
-!models/shap_vals_train_v1.npz
 !models/surrogate_background_v1.parquet
 !models/surrogate_lr_meta_v1.json
 !models/surrogate_lr_preprocessor_v1.joblib
