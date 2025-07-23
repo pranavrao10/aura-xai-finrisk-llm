@@ -1,0 +1,34 @@
+{
+  "date": "2025-07-18",
+  "UI_inputs": [
+    "grade",
+    "term",
+    "acc_open_past_24mths",
+    "dti",
+    "fico_mid"
+  ],
+  "eng_feats": [
+    "acc_open_past_24mths",
+    "dti_inv",
+    "fico_mid_sq",
+    "grade_term"
+  ],
+  "best_C": 0.19198146499020852,
+  "best_l1": 0.3663618432936917,
+  "thresholds_file": "surrogate_thresholds_v1.json",
+  "background_file": "surrogate_background_v1.parquet",
+  "percentiles_file": "surrogate_percentiles_v1.csv",
+  "ui_features": [
+    "grade",
+    "term_months",
+    "acc_open_past_24mths",
+    "dti",
+    "fico_mid"
+  ],
+  "engineered_features": [
+    "acc_open_past_24mths",
+    "grade_term",
+    "dti_inv",
+    "fico_mid_sq"
+  ]
+}

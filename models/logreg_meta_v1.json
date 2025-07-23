@@ -1,0 +1,13 @@
+{
+  "date": "2025-07-12",
+  "best_C": 0.054971677873830976,
+  "best_l1": 0.9699098521619943,
+  "solver": "saga",
+  "penalty": "elasticnet",
+  "class_weight": "balanced",
+  "cv_folds": 3,
+  "scoring": "roc_auc",
+  "max_iter": 2000,
+  "random_state": 42,
+  "Type": "Logistic Regression"
+}

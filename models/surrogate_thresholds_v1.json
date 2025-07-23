@@ -1,0 +1,13 @@
+{
+  "model_version": "v1",
+  "generated": "2025-07-18",
+  "value": 0.115439,
+  "policy": "profit",
+  "f1_optimised_threshold": 0.253238,
+  "profit_optimised_threshold": 0.115439,
+  "profit_formula": {
+    "gain_tp": 0.8,
+    "cost_fp": 0.1,
+    "units": "per-loan normalized"
+  }
+}
