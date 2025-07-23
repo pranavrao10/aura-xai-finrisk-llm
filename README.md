@@ -15,9 +15,8 @@
    - [Quick Start with Docker (Recommended)](#quick-start-with-docker-recommended)
    - [Local Dev Setup](#local-dev-setup)
 9. [Testing](#testing)
-10. [Project Structure](#project-structure)
-11. [Contributors](#contributors)
-12. [License](#license)
+10. [Contributors](#contributors)
+11. [License](#license)
 
 ---
 
@@ -189,8 +188,8 @@ No protected classes are used; explanations avoid causal language (“associated
    ```bash
    docker compose up --build
 
-   •	API: http://localhost:8000
-   •	UI:  http://localhost:8501
+   •API: http://localhost:8000
+   •UI:  http://localhost:8501
 
    ```
 
@@ -198,6 +197,7 @@ No protected classes are used; explanations avoid causal language (“associated
 
    ```bash
    docker compose down
+   ```
 
 ### Local Dev Setup
 
@@ -215,32 +215,15 @@ No protected classes are used; explanations avoid causal language (“associated
 ## Testing
 
 We use pytest with minimal yet critical coverage:
-• test_validate.py – input edge cases (grade, negatives, bounds).
-• test_percentiles.py – min/max, engineered feature mapping.
-• test_predict.py – mocks predict_proba for deterministic outputs.
-• test_explainer_fallback.py – forces LLM error to test graceful degradation.
-• test_threshold_logic.py – confirm threshold & near-threshold flag behavior.
+-test_validate.py – input edge cases (grade, negatives, bounds).
+-test_percentiles.py – min/max, engineered feature mapping.
+-test_predict.py – mocks predict_proba for deterministic outputs.
+-test_explainer_fallback.py – forces LLM error to test graceful degradation.
+-test_threshold_logic.py – confirm threshold & near-threshold flag behavior.
 
 Run:
 
 pytest -q --disable-warnings
-
----
-
-## Project Structure
-
-src/aura/
-app/ # config.py (validation, thresholds, constants)
-models/ # predict.py (model load, SHAP logic, percentile lookup)
-explain/ # explainer.py (LLM prompt, fallback, logging)
-api/ # server.py (FastAPI)
-rag/ # (planned) RAG helpers (ChromaDB)
-data/
-models/
-logs/
-scripts/
-tests/
-streamlit_app.py
 
 ---
 
