@@ -3,7 +3,6 @@ import time
 import json
 import uuid
 import requests
-from urllib.parse import urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import streamlit as st
@@ -71,7 +70,11 @@ def check_health(api_base: str, timeout_s: float = 2.0):
         elapsed = time.perf_counter() - t0
         return False, None, elapsed, str(e)
 
-ok, status, h_latency, detail = check_health(API_URL)
+@st.cache_data(ttl=15)
+def cached_health(url: str):
+    return check_health(url)
+
+ok, status, h_latency, detail = cached_health(API_URL)
 chip = (f"<div class='health-chip ok'><span class='dot'></span></div>"
         if ok else
         f"<div class='health-chip err' title='API DOWN · {h_latency:.2f}s'><span class='dot'></span> API DOWN</div>")
@@ -80,32 +83,32 @@ if not ok and SHOW_DEBUG:
     with st.expander("Health details (debug)"):
         st.code(detail if isinstance(detail, str) else json.dumps(detail, indent=2))
 
-def retry():
+def build_retry():
     try:
         return Retry(
             total=3,
             backoff_factor=0.3,
             status_forcelist=[502, 503, 504],
-            allowed_methods=frozenset(["GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"])
+            allowed_methods=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"})
         )
-    except TypeError:
+    except TypeError:  
         return Retry(
             total=3,
             backoff_factor=0.3,
             status_forcelist=[502, 503, 504],
-            method_whitelist=frozenset(["GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"])
+            method_whitelist=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"})
         )
 
 @st.cache_resource
 def get_session():
     s = requests.Session()
-    adapter = HTTPAdapter(max_retries=retry())
+    adapter = HTTPAdapter(max_retries=build_retry())
     s.mount("https://", adapter); s.mount("http://", adapter)
     return s
 
 def qp_get():
     try:
-        return st.experimental_get_query_params()
+        return dict(st.query_params)
     except Exception:
         return {}
 
@@ -132,12 +135,6 @@ if term_q and TERM_KEY not in st.session_state: st.session_state[TERM_KEY] = ter
 if acc_q and ACC_KEY not in st.session_state: st.session_state[ACC_KEY] = acc_q
 if dti_q and DTI_KEY not in st.session_state: st.session_state[DTI_KEY] = dti_q
 if fico_q and FICO_KEY not in st.session_state: st.session_state[FICO_KEY] = fico_q
-
-with st.sidebar:
-    if st.button("Reset form"):
-        for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY]:
-            if k in st.session_state: del st.session_state[k]
-        st.rerun()
 
 btn_label = "Running…" if st.session_state.submitting else "Run Assessment"
 
@@ -178,7 +175,6 @@ st.markdown("<div id='results'></div>", unsafe_allow_html=True)
 
 if run:
     st.session_state.submitting = True
-    progress = st.progress(0)
 
     errors = []
     if grade is None: errors.append("Loan Grade is required.")
@@ -204,11 +200,9 @@ if run:
     headers = {"X-Request-ID": req_id}
 
     try:
-        progress.progress(15)
         with st.spinner("Scoring and generating explanation…"):
             r = s.post(f"{API_URL}/predict_explain", json=payload, headers=headers, timeout=(5, 60))
         elapsed = time.perf_counter() - t0
-        progress.progress(70)
 
         if r.status_code == 400:
             detail = r.json().get("detail", r.text)
@@ -222,7 +216,8 @@ if run:
             st.caption(f"Response: {elapsed:.2f}s")
             halt()
         if not (200 <= r.status_code < 300):
-            st.error(f"API error: {r.status_code} - {r.text}")
+            body = r.text if len(r.text) <= 800 else r.text[:800] + "…"
+            st.error(f"API error: {r.status_code} - {body}")
             if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
             st.caption(f"Response: {elapsed:.2f}s")
             halt()
@@ -277,20 +272,27 @@ if run:
         st.subheader("Explanation")
         if exp:
             st.markdown(exp, unsafe_allow_html=False)
-            st.download_button("Download Narrative (TXT)", data=exp,
-                               file_name="explanation.txt", mime="text/plain")
+
+            cdl, cr = st.columns([3,1])
+            with cdl:
+                st.download_button("Download Narrative (TXT)", data=exp,
+                                   file_name="explanation.txt", mime="text/plain")
+            with cr:
+                if st.button("Reset form"):
+                    for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY]:
+                        if k in st.session_state: del st.session_state[k]
+                    try:
+                        st.query_params.clear()
+                    except Exception:
+                        pass
+                    st.rerun()
         else:
             st.warning("Explanation unavailable. Review the risk metrics above.")
-
-        q = "?" + urlencode({"grade": grade, "term": str(term), "acc": acc_open_s, "dti": dti_s, "fico": fico_s})
-        st.text_input("Share link", value=q, label_visibility="collapsed")
 
         if SHOW_DEBUG:
             with st.expander("Debug details"):
                 st.subheader("Payload"); st.json(payload)
                 st.subheader("Raw Response"); st.json(data)
-
-        progress.progress(100)
 
     except requests.exceptions.ConnectTimeout:
         st.error("Connection timed out while contacting the API.")
@@ -312,11 +314,18 @@ if run:
                             f"{bundle['risk_class']}</span>", unsafe_allow_html=True)
                 st.subheader("Narrative Explanation (Local)")
                 st.write(exp)
+
+                if st.button("Reset form"):
+                    for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY]:
+                        if k in st.session_state: del st.session_state[k]
+                    try:
+                        st.query_params.clear()
+                    except Exception:
+                        pass
+                    st.rerun()
             except Exception as e2:
                 st.error(f"Local fallback failed: {e2}")
         else:
             st.error(f"Network error: {e.__class__.__name__}: {e}")
     finally:
         st.session_state.submitting = False
-        try: progress.empty()
-        except Exception: pass
