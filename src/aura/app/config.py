@@ -30,7 +30,6 @@ user_friendly: Dict[str, str] = {
 }
 
 regulation_whitelist = [
-    regulation_whitelist = [
     "Equal Credit Opportunity Act (ECOA), 15 U.S.C. §1691 et seq.; Regulation B, 12 CFR Part 1002",
     "CFPB Official Interpretations to Regulation B (12 CFR Part 1002, Supp. I)",
     "Adverse Action Notice Requirements (ECOA Reg B §1002.9; FCRA §615(a))",
@@ -81,7 +80,6 @@ regulation_whitelist = [
     "42 U.S.C. §3601 (Fair Housing Act)",
     "15 U.S.C. §1681 (FCRA)",
     "12 CFR 1002 (ECOA)"
-]
 ]
 @dataclass
 class ThresholdConfig:
