@@ -280,8 +280,7 @@ if st.session_state.should_run:
                                    file_name="explanation.txt", mime="text/plain")
             with cr:
                 if st.button("Reset form"):
-                    for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY]:
-                        if k in st.session_state: del st.session_state[k]
+                     st.session_state.clear() 
                     try:
                         st.query_params.clear()
                     except Exception:
