@@ -32,9 +32,14 @@ COPY src/ ./src/
 COPY models/ ./models/
 COPY docker/api/start_api.sh /usr/local/bin/start_api.sh
 
+RUN useradd -ms /bin/bash appuser \
+ && mkdir -p /app/logs \
+ && chown -R appuser:appuser /app
+
 RUN sed -i 's/\r$//' /usr/local/bin/start_api.sh \
  && chmod +x /usr/local/bin/start_api.sh
 
-USER nobody
+USER appuser
+ENV HOME=/home/appuser
 
 ENTRYPOINT ["/usr/local/bin/start_api.sh"]
