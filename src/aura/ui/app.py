@@ -92,7 +92,7 @@ def save_and_rerun(result_dict: dict):
     st.session_state["last_result"] = result_dict
     st.session_state.submitting = False
     st.session_state.just_finished = True
-    st.experimental_rerun()
+    st.rerun()
 
 to_int = lambda s: int(s)   if (s:=s.strip()) else None
 to_float = lambda s: float(s) if (s:=s.strip()) else None
