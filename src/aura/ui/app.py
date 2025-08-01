@@ -118,7 +118,7 @@ with st.form(key=st.session_state.form_key):
 
     st.form_submit_button(btn_label, on_click=start_submit, disabled=st.session_state.submitting)
 
-if st.button("Reset form (top)", key="reset_top"):
+if st.button("Reset form", key="reset_top"):
     st.session_state.clear()
     st.session_state["force_blank"] = True
     st.rerun()
@@ -187,16 +187,17 @@ if st.session_state.should_run:
 
         st.subheader("Explanation")
         if exp: st.markdown(exp)
-        else:   st.warning("Explanation unavailable.")
+        else: st.warning("Explanation unavailable.")
 
-        dl,rb = st.columns([3,1])
-        with dl:
+        with st.container():
             if exp:
-                st.download_button("Download Narrative (TXT)",data=exp,
-                                   file_name="explanation.txt",mime="text/plain")
-        with rb:
-            if st.button("Reset form", key="reset_bottom"):
-                st.session_state.clear(); st.session_state["force_blank"]=True; st.rerun()
+                st.download_button(
+                    "Download Narrative (TXT)",
+                    data=exp,
+                    file_name="explanation.txt",
+                    mime="text/plain"
+                )
+
 
         if SHOW_DEBUG:
             with st.expander("Debug details"):
@@ -210,4 +211,4 @@ if st.session_state.should_run:
         st.error(f"Network error: {e}");  halt()
     finally:
         st.session_state.submitting=False
-        st.rerun()  
+        
