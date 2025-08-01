@@ -44,7 +44,7 @@ if run:
             st.write(f"**Near Threshold:** {pred['near_threshold_flag']}")
 
             st.subheader("Explanation")
-            st.write(exp)
+            st.markdown(exp)
 
             st.download_button(
                 "Download Narrative",

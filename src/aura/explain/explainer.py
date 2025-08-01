@@ -35,7 +35,8 @@ Explain WHY the model classified this applicant’s probability of default as Hi
 6. Use regulations, lending policies, and lending laws as context and explain exactly why each factor matters and how it contributed to the decision.
 
 **CONTENT RULES**
-- Opening sentence: State probability (as %), threshold (%), delta, risk class. 
+-Return **markdown only**. No JSON, code, or tables.
+- Opening sentence: State probability (as %), threshold (%), delta, risk class. Give a short summary of the risk assessment. 
 - Five factor deep-dive – one bullet per UI feature.  
    • Include applicant value, percentile (ex: “85th pct”), risk direction (↑/↓), and qualitative magnitude.  
    • Explain *how* and *why* each factor contributes.  
