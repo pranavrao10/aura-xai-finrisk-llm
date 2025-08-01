@@ -5,24 +5,17 @@ services:
     dockerfilePath: docker/api/Dockerfile.api
     plan: free
     healthCheckPath: /health
-
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: AURA_API_URL
         value: "http://aura-api:8000"
 
-    disk:
-      name: logs
-      mountPath: /app/logs
-      sizeGB: 1
-
   - type: web
     name: aura-ui
     env: docker
     dockerfilePath: docker/ui/Dockerfile.ui
     plan: free
-
     envVars:
       - key: AURA_API_URL
         value: "https://aura-api.onrender.com"
