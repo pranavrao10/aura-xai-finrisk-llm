@@ -12,12 +12,30 @@ st.set_page_config(page_title="AURA - Autonomous Risk Assessment", page_icon="ðŸ
 st.title("AURA - Autonomous Risk Assessment")
 
 with st.form("inputs"):
-    grade = st.selectbox("Loan Grade", list("ABCDEFG"), index=1)
-    term = st.selectbox("Loan Term (months)", [36, 60], index=0)
-    acc_open = st.number_input("Accounts opened (24m)", min_value=0, value=2, step=1)
-    dti = st.number_input("Debt-to-Income Ratio (%)", min_value=0.0, value=15.0, step=0.1)
-    fico = st.number_input("FICO Score", min_value=300, max_value=850, value=720, step=1)
-    run = st.form_submit_button("Run Assessment")
+    grade = st.selectbox("Loan Grade", list("ABCDEFG"), index=None, placeholder="Select a grade")
+    term = st.selectbox("Loan Term (months)", [36, 60], index=None, placeholder="Select a term")
+    acc_open_s = st.text_input("Accounts opened (24m)", placeholder="ex: 2")
+    dti_s = st.text_input("Debt-to-Income Ratio (%)", placeholder="ex: 15.0")
+    fico_s = st.text_input("FICO Score", placeholder="300â€“850")
+    def to_int(s):
+        try: return int(s)
+        except: return None
+    def to_float(s):
+        try: return float(s)
+        except: return None
+
+    acc_open = to_int(acc_open_s)
+    dti = to_float(dti_s)
+    fico = to_int(fico_s)
+
+    valid = (
+        grade is not None and term is not None and
+        acc_open is not None and acc_open >= 0 and
+        dti is not None and dti >= 0 and
+        fico is not None and 300 <= fico <= 850
+    )
+
+    run = st.form_submit_button("Run Assessment", disabled=not valid)
 
 if run:
     payload = {

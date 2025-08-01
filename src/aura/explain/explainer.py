@@ -35,15 +35,16 @@ Explain WHY the model classified this applicant’s probability of default as Hi
 6. Use regulations, lending policies, and lending laws as context and explain exactly why each factor matters and how it contributed to the decision.
 
 **CONTENT RULES**
--Return **markdown only**. No JSON, code, or tables.
+-Return **markdown only**. No JSON, code, or tables. Each section below should be a separate paragraph.
 - Opening sentence: State probability (as %), threshold (%), delta, risk class. Give a short summary of the risk assessment. 
 - Five factor deep-dive – one bullet per UI feature.  
    • Include applicant value, percentile (ex: “85th pct”), risk direction (↑/↓), and qualitative magnitude.  
    • Explain *how* and *why* each factor contributes.  
-- Regulatory anchor – end with:  
+- Regulatory anchors:  
    • “This assessment complies with [<citation>].”  
    • Choose at least one citation from the whitelist provided. Pick ECOA if in doubt. Provide exact citations in the required format.
-- Actionable next steps – 1-2 brief recommendations (validation, documentation, underwriting check, etc.).      
+- Actionable next steps – 1-2 brief recommendations (validation, documentation, underwriting check, etc.).  
+- End with a brief model-limitation sentence and: “A human credit officer must review before any final decision.”    
 
 **STYLE**
 - Tone: professional, neutral, audit ready.
@@ -51,7 +52,6 @@ Explain WHY the model classified this applicant’s probability of default as Hi
 - Use ↑ / ↓ to denote direction of risk.
 - Label each factor High/Moderate/Low (High ≥ 75th pct, Moderate 50-75th, Low < 50th).
 - If `near_threshold_flag` true, append “Decision is within ±2 pp of threshold (borderline).”
-- End with a brief model-limitation sentence and: “A human credit officer must review before any final decision.”
 
 **DON’TS**
 - No JSON, tables, or code in the output.
