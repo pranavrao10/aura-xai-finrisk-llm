@@ -1,0 +1,40 @@
+FROM python:3.12-slim AS api-builder
+ENV PIP_NO_CACHE_DIR=1
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential python3-dev cython3 gfortran libopenblas-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY models ./models
+
+RUN python -m venv /venv \
+ && /venv/bin/pip install --upgrade pip wheel setuptools \
+ && /venv/bin/pip wheel .[api] --wheel-dir /wheels
+
+FROM python:3.12-slim AS api-runtime
+ENV PATH="/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends bash curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=api-builder /venv /venv
+COPY --from=api-builder /wheels /wheels
+RUN pip install /wheels/* && rm -rf /wheels
+
+COPY src/ ./src/
+COPY models/ ./models/
+COPY docker/api/start_api.sh /usr/local/bin/start_api.sh
+
+RUN sed -i 's/\r$//' /usr/local/bin/start_api.sh \
+ && chmod +x /usr/local/bin/start_api.sh
+
+USER nobody
+
+ENTRYPOINT ["/usr/local/bin/start_api.sh"]

@@ -1,8 +1,6 @@
 from __future__ import annotations
-import os
 import traceback
 from typing import Literal, Optional, Dict, Any
-
 from fastapi import FastAPI, HTTPException, Request
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
@@ -58,7 +56,7 @@ async def lifespan(app: FastAPI):
         print("Warm-up failed:", e)
     yield
 
-app = FastAPI(title="AURA - Autonomous Credit Risk Assessment", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="AURA - Autonomous Risk Assessment", version="1.0.0", lifespan=lifespan)
 
 @app.get("/health")
 def health():

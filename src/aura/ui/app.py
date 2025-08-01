@@ -4,12 +4,12 @@ import streamlit as st
 
 API_URL = os.getenv("AURA_API_URL", "http://localhost:8000")
 
-st.set_page_config(page_title="AURA - Autonomous Credit Risk Assessment", page_icon="💳",
-    layout="wide",
+st.set_page_config(page_title="AURA - Autonomous Risk Assessment", page_icon="💳",
+    layout="centered",
     initial_sidebar_state="expanded",
-    menu_items={"About": "AURA - Autonomous Credit Risk Assessment\n\n"})
+    menu_items={"About": "AURA - Autonomous Risk Assessment\n\n"})
 
-st.title("AURA - Autonomous Credit Risk Assessment")
+st.title("AURA - Autonomous Risk Assessment")
 
 with st.form("inputs"):
     grade = st.selectbox("Loan Grade", list("ABCDEFG"), index=1)
@@ -28,7 +28,7 @@ if run:
         "fico_mid": fico
     }
     try:
-        r = requests.post(f"{API_URL}/predict_explain", json=payload, timeout=20)
+        r = requests.post(f"{API_URL}/predict_explain", json=payload, timeout=60)
         if r.status_code != 200:
             st.error(f"API error: {r.status_code} - {r.text}")
         else:
