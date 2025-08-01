@@ -280,7 +280,7 @@ if st.session_state.should_run:
                                    file_name="explanation.txt", mime="text/plain")
             with cr:
                 if st.button("Reset form"):
-                     st.session_state.clear() 
+                    st.session_state.clear() 
                     try:
                         st.query_params.clear()
                     except Exception:
