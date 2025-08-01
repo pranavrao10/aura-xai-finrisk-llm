@@ -159,7 +159,10 @@ if st.session_state.should_run:
 
         render_chip(*check_health(API_URL)[:2])  
 
-        try: st.toast("Results ready."); except Exception: pass
+        try:
+            st.toast("Results ready.")
+        except Exception:
+            pass
         st.caption(f"Response time: {elapsed:.2f}s")
 
         pd,thr = float(pred["prob_default"]), float(pred["threshold"])
