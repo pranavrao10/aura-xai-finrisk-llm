@@ -33,10 +33,20 @@ button[kind="primary"] { border-radius: 10px; }
 
 /* Compact health chip in top-right corner */
 .health-chip {
-  position: fixed; top: 12px; right: 16px; z-index: 9999;
-  padding: 6px 10px; border-radius: 999px; font-size: 0.80rem; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 6px; opacity: 0.95;
+  position: fixed;
+  bottom: 16px;            
+  right: 16px;
+  z-index: 2147483647;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.80rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.95;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  pointer-events: none;
 }
 .health-chip.ok  { background:#e8f7ee; color:#0a7f42; border:1px solid #cceedd; }
 .health-chip.err { background:#fdecec; color:#a41020; border:1px solid #f5c2c7; }
