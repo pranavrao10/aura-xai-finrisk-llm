@@ -86,15 +86,13 @@ if not ok and SHOW_DEBUG:
 def build_retry():
     try:
         return Retry(
-            total=3,
-            backoff_factor=0.3,
+            total=3, backoff_factor=0.3,
             status_forcelist=[502, 503, 504],
             allowed_methods=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"})
         )
-    except TypeError:  
+    except TypeError:
         return Retry(
-            total=3,
-            backoff_factor=0.3,
+            total=3, backoff_factor=0.3,
             status_forcelist=[502, 503, 504],
             method_whitelist=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"})
         )
@@ -128,6 +126,17 @@ fico_q = qp(params.get("fico"), str, None)
 
 if "submitting" not in st.session_state:
     st.session_state.submitting = False
+if "should_run" not in st.session_state:
+    st.session_state.should_run = False
+
+def start_submit():
+    st.session_state.submitting = True
+    st.session_state.should_run = True
+
+def halt():
+    st.session_state.submitting = False
+    st.session_state.should_run = False
+    st.stop()
 
 GRADE_KEY = "grade_in"; TERM_KEY = "term_in"; ACC_KEY = "acc_in"; DTI_KEY = "dti_in"; FICO_KEY = "fico_in"
 if grade_q and GRADE_KEY not in st.session_state: st.session_state[GRADE_KEY] = grade_q
@@ -155,7 +164,12 @@ with st.form("inputs"):
                             key=TERM_KEY)
         dti_s = st.text_input("Debt-to-Income Ratio (%) *", placeholder="ex: 15.0",
                               help="Non-negative number. Do not include the % sign.", key=DTI_KEY)
-    run = st.form_submit_button(btn_label, disabled=st.session_state.submitting)
+
+    st.form_submit_button(
+        btn_label,
+        on_click=start_submit,
+        disabled=st.session_state.submitting
+    )
 
 def to_int(s):
     s = (s or "").strip()
@@ -167,15 +181,8 @@ def to_float(s):
     try: return float(s)
     except: return None
 
-def halt():
-    st.session_state.submitting = False
-    st.stop()
-
-st.markdown("<div id='results'></div>", unsafe_allow_html=True)
-
-if run:
-    st.session_state.submitting = True
-
+if st.session_state.should_run:
+    st.session_state.should_run = False
     errors = []
     if grade is None: errors.append("Loan Grade is required.")
     if term is None:  errors.append("Loan Term is required.")
@@ -208,27 +215,23 @@ if run:
             detail = r.json().get("detail", r.text)
             st.error(f"Input error: {detail}")
             if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
-            st.caption(f"Response: {elapsed:.2f}s")
-            halt()
+            st.caption(f"Response: {elapsed:.2f}s"); halt()
         if r.status_code == 429:
             st.error("Rate limit exceeded. Please wait and try again.")
             if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
-            st.caption(f"Response: {elapsed:.2f}s")
-            halt()
+            st.caption(f"Response: {elapsed:.2f}s"); halt()
         if not (200 <= r.status_code < 300):
             body = r.text if len(r.text) <= 800 else r.text[:800] + "…"
             st.error(f"API error: {r.status_code} - {body}")
             if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
-            st.caption(f"Response: {elapsed:.2f}s")
-            halt()
+            st.caption(f"Response: {elapsed:.2f}s"); halt()
 
         try:
             data = r.json()
         except ValueError:
             st.error("API returned non-JSON response.")
             if SHOW_DEBUG: st.caption(f"req_id: {req_id}")
-            st.caption(f"Response: {elapsed:.2f}s")
-            halt()
+            st.caption(f"Response: {elapsed:.2f}s"); halt()
 
         pred = data.get("prediction")
         expl = (data.get("explanation") or {})
@@ -240,8 +243,6 @@ if run:
 
         try: st.toast("Results ready.")
         except Exception: pass
-        st.markdown("<script>document.getElementById('results').scrollIntoView({behavior:'smooth'});</script>",
-                    unsafe_allow_html=True)
 
         st.caption(f"Response time: {elapsed:.2f}s")
         if SHOW_DEBUG: st.caption(f"req_id: {req_id}")
@@ -295,9 +296,9 @@ if run:
                 st.subheader("Raw Response"); st.json(data)
 
     except requests.exceptions.ConnectTimeout:
-        st.error("Connection timed out while contacting the API.")
+        st.error("Connection timed out while contacting the API."); halt()
     except requests.exceptions.ReadTimeout:
-        st.error("The API took too long to respond. Try again.")
+        st.error("The API took too long to respond. Try again."); halt()
     except requests.exceptions.RequestException as e:
         if os.getenv("ENABLE_LOCAL_FALLBACK", "false").lower() == "true":
             st.warning(f"API not reachable ({e.__class__.__name__}). Falling back to local demo.")
@@ -324,8 +325,8 @@ if run:
                         pass
                     st.rerun()
             except Exception as e2:
-                st.error(f"Local fallback failed: {e2}")
+                st.error(f"Local fallback failed: {e2}"); halt()
         else:
-            st.error(f"Network error: {e.__class__.__name__}: {e}")
+            st.error(f"Network error: {e.__class__.__name__}: {e}"); halt()
     finally:
         st.session_state.submitting = False
