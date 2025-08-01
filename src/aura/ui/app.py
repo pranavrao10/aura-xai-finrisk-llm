@@ -1,13 +1,15 @@
 import os
 import time
 import json
+import uuid
 import requests
+from urllib.parse import urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import streamlit as st
 
 API_URL = os.getenv("AURA_API_URL", "http://localhost:8000").rstrip("/")
-SHOW_DEBUG = os.getenv("SHOW_DEBUG", "false").lower() == "true" 
+SHOW_DEBUG = os.getenv("SHOW_DEBUG", "false").lower() == "true"
 
 st.set_page_config(
     page_title="AURA - Autonomous Risk Assessment",
@@ -19,46 +21,43 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* Center the main title and captions */
 h1, .stMarkdown h1 { text-align: center; }
 div[data-testid="stCaptionContainer"] p { text-align: center; }
 
+/* Max width + mobile spacing (polish) */
+.block-container { padding-top: 1.2rem; max-width: 900px; margin: auto; }
+@media (max-width: 640px){
+  div[data-testid="stForm"] { padding: 0.75rem; }
+}
+
 /* Card feel for the form */
-.block-container { padding-top: 1.2rem; }
 div[data-testid="stForm"] { border: 1px solid #e9ecef; border-radius: 12px; padding: 1rem 1rem 0.5rem; }
 div[data-testid="stMetricValue"] { font-weight: 700; }
-
-/* Buttons */
 button[kind="primary"] { border-radius: 10px; }
 
-/* Compact health chip in top-right corner */
+/* Health chip (bottom-right) */
 .health-chip {
-  position: fixed;
-  bottom: 16px;            
-  right: 16px;
-  z-index: 2147483647;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.80rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.95;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  pointer-events: none;
+  position: fixed; bottom: 16px; right: 16px; z-index: 2147483647;
+  padding: 6px 10px; border-radius: 999px; font-size: 0.80rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px; opacity: 0.95;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); pointer-events: none;
 }
 .health-chip.ok  { background:#e8f7ee; color:#0a7f42; border:1px solid #cceedd; }
 .health-chip.err { background:#fdecec; color:#a41020; border:1px solid #f5c2c7; }
 .health-chip .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 .health-chip.ok  .dot { background:#0a7f42; }
 .health-chip.err .dot { background:#a41020; }
+
+/* Risk class pill */
+.pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:0.85rem; font-weight:600; }
+.pill.low    { background:#e8f7ee; color:#0a7f42; border:1px solid #cceedd; }
+.pill.medium { background:#fff4e5; color:#8a4b00; border:1px solid #ffd8a8; }
+.pill.high   { background:#fdecec; color:#a41020; border:1px solid #f5c2c7; }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("AURA - Autonomous Risk Assessment")
 st.caption("Enter loan application details below to generate a risk assessment with an explanatory narrative.")
-
 
 def check_health(api_base: str, timeout_s: float = 2.0):
     url = f"{api_base}/health"
@@ -73,53 +72,93 @@ def check_health(api_base: str, timeout_s: float = 2.0):
         return False, None, elapsed, str(e)
 
 ok, status, h_latency, detail = check_health(API_URL)
-st.markdown(
-    f'''
-    <div class="health-chip {'ok' if ok else 'err'}" title="API Health · Latency {h_latency:.2f}s">
-      <span class="dot"></span>
-      {'API OK' if ok else 'API DOWN'} · {h_latency:.2f}s
-    </div>
-    ''',
-    unsafe_allow_html=True
-)
+chip = (f"<div class='health-chip ok'><span class='dot'></span></div>"
+        if ok else
+        f"<div class='health-chip err' title='API DOWN · {h_latency:.2f}s'><span class='dot'></span> API DOWN</div>")
+st.markdown(chip, unsafe_allow_html=True)
 if not ok and SHOW_DEBUG:
     with st.expander("Health details (debug)"):
         st.code(detail if isinstance(detail, str) else json.dumps(detail, indent=2))
 
+def retry():
+    try:
+        return Retry(
+            total=3,
+            backoff_factor=0.3,
+            status_forcelist=[502, 503, 504],
+            allowed_methods=frozenset(["GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"])
+        )
+    except TypeError:
+        return Retry(
+            total=3,
+            backoff_factor=0.3,
+            status_forcelist=[502, 503, 504],
+            method_whitelist=frozenset(["GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"])
+        )
+
+@st.cache_resource
+def get_session():
+    s = requests.Session()
+    adapter = HTTPAdapter(max_retries=retry())
+    s.mount("https://", adapter); s.mount("http://", adapter)
+    return s
+
+def qp_get():
+    try:
+        return st.experimental_get_query_params()
+    except Exception:
+        return {}
+
+params = qp_get()
+def qp(val_list, cast=str, default=None):
+    if not val_list: return default
+    try:
+        return cast(val_list[0]) if isinstance(val_list, list) else cast(val_list)
+    except Exception:
+        return default
+
+grade_q = qp(params.get("grade"), str, None)
+term_q = qp(params.get("term"), int, None)
+acc_q = qp(params.get("acc"), str, None)
+dti_q = qp(params.get("dti"), str, None)
+fico_q = qp(params.get("fico"), str, None)
+
+if "submitting" not in st.session_state:
+    st.session_state.submitting = False
+
+GRADE_KEY = "grade_in"; TERM_KEY = "term_in"; ACC_KEY = "acc_in"; DTI_KEY = "dti_in"; FICO_KEY = "fico_in"
+if grade_q and GRADE_KEY not in st.session_state: st.session_state[GRADE_KEY] = grade_q
+if term_q and TERM_KEY not in st.session_state: st.session_state[TERM_KEY] = term_q
+if acc_q and ACC_KEY not in st.session_state: st.session_state[ACC_KEY] = acc_q
+if dti_q and DTI_KEY not in st.session_state: st.session_state[DTI_KEY] = dti_q
+if fico_q and FICO_KEY not in st.session_state: st.session_state[FICO_KEY] = fico_q
+
+with st.sidebar:
+    if st.button("Reset form"):
+        for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY]:
+            if k in st.session_state: del st.session_state[k]
+        st.rerun()
+
+btn_label = "Running…" if st.session_state.submitting else "Run Assessment"
+
 with st.form("inputs"):
     c1, c2 = st.columns(2)
     with c1:
-        grade = st.selectbox(
-            "Loan Grade *",
-            list("ABCDEFG"),
-            index=None,
-            placeholder="Select a loan grade",
-            help="Letter grade assigned at origination."
-        )
-        acc_open_s = st.text_input(
-            "Accounts opened (24m) *",
-            placeholder="ex: 2",
-            help="Must be a non-negative integer."
-        )
-        fico_s = st.text_input(
-            "FICO Score *",
-            placeholder="300–850",
-            help="Integer between 300 and 850."
-        )
+        grade = st.selectbox("Loan Grade *", list("ABCDEFG"), index=None,
+                             placeholder="Select a loan grade",
+                             help="Letter grade assigned at origination.",
+                             key=GRADE_KEY)
+        acc_open_s = st.text_input("Accounts opened (24m) *", placeholder="ex: 2",
+                                   help="Must be a non-negative integer.", key=ACC_KEY)
+        fico_s = st.text_input("FICO Score *", placeholder="300–850",
+                               help="Integer between 300 and 850.", key=FICO_KEY)
     with c2:
-        term = st.selectbox(
-            "Loan Term (months) *",
-            [36, 60],
-            index=None,
-            placeholder="Select a term",
-            help="Commonly 36 or 60 months."
-        )
-        dti_s = st.text_input(
-            "Debt-to-Income Ratio (%) *",
-            placeholder="ex: 15.0",
-            help="Non-negative number. Do not include the % sign."
-        )
-    run = st.form_submit_button("Run Assessment")
+        term = st.selectbox("Loan Term (months) *", [36, 60], index=None,
+                            placeholder="Select a term", help="Commonly 36 or 60 months.",
+                            key=TERM_KEY)
+        dti_s = st.text_input("Debt-to-Income Ratio (%) *", placeholder="ex: 15.0",
+                              help="Non-negative number. Do not include the % sign.", key=DTI_KEY)
+    run = st.form_submit_button(btn_label, disabled=st.session_state.submitting)
 
 def to_int(s):
     s = (s or "").strip()
@@ -131,14 +170,16 @@ def to_float(s):
     try: return float(s)
     except: return None
 
-def new_session():
-    sess = requests.Session()
-    adapter = HTTPAdapter(max_retries=Retry(total=3, backoff_factor=0.3, status_forcelist=[502, 503, 504]))
-    sess.mount("https://", adapter)
-    sess.mount("http://", adapter)
-    return sess
+def halt():
+    st.session_state.submitting = False
+    st.stop()
+
+st.markdown("<div id='results'></div>", unsafe_allow_html=True)
 
 if run:
+    st.session_state.submitting = True
+    progress = st.progress(0)
+
     errors = []
     if grade is None: errors.append("Loan Grade is required.")
     if term is None:  errors.append("Loan Term is required.")
@@ -150,68 +191,106 @@ if run:
     if fico is None or not (300 <= fico <= 850): errors.append("FICO must be 300–850.")
     if errors:
         for e in errors: st.error(e)
-        st.stop()
+        halt()
 
     payload = {
-        "grade": grade,
-        "term": term,
-        "acc_open_past_24mths": acc_open,
-        "dti": dti,
-        "fico_mid": fico
+        "grade": grade, "term": term,
+        "acc_open_past_24mths": acc_open, "dti": dti, "fico_mid": fico
     }
 
-    s = new_session()
+    s = get_session()
     t0 = time.perf_counter()
+    req_id = uuid.uuid4().hex
+    headers = {"X-Request-ID": req_id}
+
     try:
+        progress.progress(15)
         with st.spinner("Scoring and generating explanation…"):
-            r = s.post(f"{API_URL}/predict_explain", json=payload, timeout=(5, 60))
+            r = s.post(f"{API_URL}/predict_explain", json=payload, headers=headers, timeout=(5, 60))
         elapsed = time.perf_counter() - t0
+        progress.progress(70)
 
         if r.status_code == 400:
             detail = r.json().get("detail", r.text)
             st.error(f"Input error: {detail}")
-            st.caption(f"Response: {elapsed:.2f}s"); st.stop()
+            if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
+            st.caption(f"Response: {elapsed:.2f}s")
+            halt()
         if r.status_code == 429:
             st.error("Rate limit exceeded. Please wait and try again.")
-            st.caption(f"Response: {elapsed:.2f}s"); st.stop()
+            if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
+            st.caption(f"Response: {elapsed:.2f}s")
+            halt()
         if not (200 <= r.status_code < 300):
             st.error(f"API error: {r.status_code} - {r.text}")
-            st.caption(f"Response: {elapsed:.2f}s"); st.stop()
+            if SHOW_DEBUG: st.caption(f"req_id: {req_id} · {int(elapsed*1000)} ms")
+            st.caption(f"Response: {elapsed:.2f}s")
+            halt()
 
         try:
             data = r.json()
         except ValueError:
             st.error("API returned non-JSON response.")
-            st.caption(f"Response: {elapsed:.2f}s"); st.stop()
+            if SHOW_DEBUG: st.caption(f"req_id: {req_id}")
+            st.caption(f"Response: {elapsed:.2f}s")
+            halt()
 
         pred = data.get("prediction")
         expl = (data.get("explanation") or {})
         exp = expl.get("narrative")
         if not pred:
-            st.error("API response missing 'prediction'."); st.stop()
+            st.error("API response missing 'prediction'.")
+            if SHOW_DEBUG: st.caption(f"req_id: {req_id}")
+            halt()
+
+        try: st.toast("Results ready.")
+        except Exception: pass
+        st.markdown("<script>document.getElementById('results').scrollIntoView({behavior:'smooth'});</script>",
+                    unsafe_allow_html=True)
 
         st.caption(f"Response time: {elapsed:.2f}s")
+        if SHOW_DEBUG: st.caption(f"req_id: {req_id}")
+
+        pd = float(pred.get("prob_default", 0) or 0)
+        thr = float(pred.get("threshold", 0) or 0)
+        delta = float(pred.get("threshold_delta", pd - thr))
+        policy = pred.get("threshold_policy", "—")
+        near = bool(pred.get("near_threshold_flag", False))
 
         st.subheader("Risk Assessment")
         m1, m2, m3 = st.columns(3)
-        m1.metric("Probability of Default", f"{pred['prob_default']:.2%}")
-        m2.metric("Threshold", f"{pred['threshold']:.2%}")
-        m3.metric("Δ vs Threshold", f"{pred['threshold_delta']:.2%}")
-        st.caption(f"Near-threshold: **{pred['near_threshold_flag']}**  ·  Policy: **{pred['threshold_policy']}**")
+        m1.metric("Probability of Default", f"{pd:.2%}")
+        m2.metric("Threshold", f"{thr:.2%}")
+        m3.metric("Δ vs Threshold", f"{delta:.2%}")
+
+        rc = str(pred.get("risk_class", "")).strip().lower()
+        rc_map = {"low": "low", "medium": "medium", "moderate": "medium", "high": "high"}
+        css_class = rc_map.get(rc, "medium")
+        label = (pred.get("risk_class") or "Unknown").title()
+        st.markdown(f"**Risk Class:** <span class='pill {css_class}'>{label}</span>", unsafe_allow_html=True)
+
+        if near:
+            st.info("Applicant is near the policy threshold — consider manual review or additional documentation.")
+
+        st.caption(f"Policy: **{policy}**  ·  Near-threshold: **{near}**")
 
         st.subheader("Explanation")
         if exp:
-            st.markdown(exp)
-            st.download_button("Download Narrative (TXT)", data=exp, file_name="explanation.txt", mime="text/plain")
+            st.markdown(exp, unsafe_allow_html=False)
+            st.download_button("Download Narrative (TXT)", data=exp,
+                               file_name="explanation.txt", mime="text/plain")
         else:
             st.warning("Explanation unavailable. Review the risk metrics above.")
 
+        q = "?" + urlencode({"grade": grade, "term": str(term), "acc": acc_open_s, "dti": dti_s, "fico": fico_s})
+        st.text_input("Share link", value=q, label_visibility="collapsed")
+
         if SHOW_DEBUG:
             with st.expander("Debug details"):
-                st.subheader("Payload")
-                st.json(payload)
-                st.subheader("Raw Response")
-                st.json(data)
+                st.subheader("Payload"); st.json(payload)
+                st.subheader("Raw Response"); st.json(data)
+
+        progress.progress(100)
 
     except requests.exceptions.ConnectTimeout:
         st.error("Connection timed out while contacting the API.")
@@ -229,10 +308,15 @@ if run:
                 m1.metric("Probability of Default", f"{bundle['prob_default']:.2%}")
                 m2.metric("Threshold", f"{bundle['threshold']:.2%}")
                 m3.metric("Δ vs Threshold", f"{bundle['threshold_delta']:.2%}")
-                st.caption(f"Risk Class: **{bundle['risk_class']}**")
+                st.markdown(f"**Risk Class:** <span class='pill {('low' if bundle['risk_class'].lower()=='low' else 'high')}'>"
+                            f"{bundle['risk_class']}</span>", unsafe_allow_html=True)
                 st.subheader("Narrative Explanation (Local)")
                 st.write(exp)
             except Exception as e2:
                 st.error(f"Local fallback failed: {e2}")
         else:
             st.error(f"Network error: {e.__class__.__name__}: {e}")
+    finally:
+        st.session_state.submitting = False
+        try: progress.empty()
+        except Exception: pass
