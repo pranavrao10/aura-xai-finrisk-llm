@@ -98,10 +98,10 @@ to_int = lambda s: int(s)   if (s:=s.strip()) else None
 to_float = lambda s: float(s) if (s:=s.strip()) else None
 
 GRADE_KEY = "grade_in"
-TERM_KEY  = "term_in"
-ACC_KEY   = "acc_in"
-DTI_KEY   = "dti_in"
-FICO_KEY  = "fico_in"
+TERM_KEY = "term_in"
+ACC_KEY = "acc_in"
+DTI_KEY = "dti_in"
+FICO_KEY = "fico_in"
 
 if "submitting" not in st.session_state: st.session_state.submitting = False
 if "should_run" not in st.session_state: st.session_state.should_run = False
@@ -129,7 +129,6 @@ def reset_form_only():
     for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY, "last_result"]:
         st.session_state.pop(k, None)
     st.session_state.form_key = "f_" + uuid.uuid4().hex
-    st.rerun()
 
 st.button("Reset form", key="reset_top", on_click=reset_form_only)
 
@@ -167,9 +166,9 @@ if st.session_state.should_run:
 
     errors=[]
     if st.session_state.get(GRADE_KEY) is None: errors.append("Loan Grade is required.")
-    if st.session_state.get(TERM_KEY)  is None: errors.append("Loan Term is required.")
-    acc  = to_int(str(st.session_state.get(ACC_KEY) or ""))
-    dti  = to_float(str(st.session_state.get(DTI_KEY) or ""))
+    if st.session_state.get(TERM_KEY) is None: errors.append("Loan Term is required.")
+    acc = to_int(str(st.session_state.get(ACC_KEY) or ""))
+    dti = to_float(str(st.session_state.get(DTI_KEY) or ""))
     fico = to_int(str(st.session_state.get(FICO_KEY) or ""))
 
     if acc is None or acc < 0: errors.append("Accounts opened must be non-negative integer.")
