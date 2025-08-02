@@ -59,7 +59,7 @@ def build_retry():
         return Retry(total=3, backoff_factor=0.3,
                      status_forcelist=[502,503,504],
                      allowed_methods=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"}))
-    except TypeError:                   # urllib3 <2.0 fallback
+    except TypeError:                   
         return Retry(total=3, backoff_factor=0.3,
                      status_forcelist=[502,503,504],
                      method_whitelist=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"}))
@@ -98,9 +98,9 @@ to_int = lambda s: int(s)   if (s:=s.strip()) else None
 to_float = lambda s: float(s) if (s:=s.strip()) else None
 
 
-if "submitting" not in st.session_state: st.session_state.submitting  = False
+if "submitting" not in st.session_state: st.session_state.submitting = False
 if "should_run" not in st.session_state: st.session_state.should_run = False
-if "form_key"  not in st.session_state: st.session_state.form_key   = "f_" + uuid.uuid4().hex
+if "form_key" not in st.session_state: st.session_state.form_key = "f_" + uuid.uuid4().hex
 if "force_blank" in st.session_state:
     st.session_state.form_key = "f_" + uuid.uuid4().hex
     del st.session_state["force_blank"]
@@ -130,18 +130,18 @@ if st.button("Reset form", key="reset_top"):
     st.rerun()
 
 if st.session_state.get("last_result") and st.session_state.get("just_finished"):
-    res  = st.session_state["last_result"]
+    res = st.session_state["last_result"]
     st.session_state.just_finished = False 
 
     pd, thr, delta = res["pd"], res["thr"], res["delta"]
-    policy, near  = res["policy"], res["near"]
+    policy, near = res["policy"], res["near"]
     pred_rc = res["rc"]
 
     st.subheader("Risk Assessment")
     c1,c2,c3 = st.columns(3)
     c1.metric("Probability of Default", f"{pd:.2%}")
-    c2.metric("Threshold",              f"{thr:.2%}")
-    c3.metric("Δ vs Threshold",         f"{delta:.2%}")
+    c2.metric("Threshold", f"{thr:.2%}")
+    c3.metric("Δ vs Threshold", f"{delta:.2%}")
 
     rc_map={"low":"low","medium":"medium","moderate":"medium","high":"high"}
     st.markdown(
@@ -163,7 +163,6 @@ if st.session_state.get("last_result") and st.session_state.get("just_finished")
 if st.session_state.should_run:
     st.session_state.should_run = False
 
- 
     errors=[]
     if grade is None: errors.append("Loan Grade is required.")
     if term is None: errors.append("Loan Term is required.")
