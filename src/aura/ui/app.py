@@ -59,7 +59,7 @@ def build_retry():
         return Retry(total=3, backoff_factor=0.3,
                      status_forcelist=[502,503,504],
                      allowed_methods=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"}))
-    except TypeError:                   
+    except TypeError:
         return Retry(total=3, backoff_factor=0.3,
                      status_forcelist=[502,503,504],
                      method_whitelist=frozenset({"GET","POST","PUT","DELETE","OPTIONS","HEAD","PATCH"}))
@@ -91,12 +91,10 @@ def halt():
 def save_and_rerun(result_dict: dict):
     st.session_state["last_result"] = result_dict
     st.session_state.submitting = False
-    st.session_state.just_finished = True
     st.rerun()
 
-to_int = lambda s: int(s)   if (s:=s.strip()) else None
+to_int = lambda s: int(s) if (s:=s.strip()) else None
 to_float = lambda s: float(s) if (s:=s.strip()) else None
-
 
 if "submitting" not in st.session_state: st.session_state.submitting = False
 if "should_run" not in st.session_state: st.session_state.should_run = False
@@ -113,12 +111,12 @@ btn_label = "Running…" if st.session_state.submitting else "Run Assessment"
 with st.form(key=st.session_state.form_key):
     c1, c2 = st.columns(2)
     grade = c1.selectbox("Loan Grade *", list("ABCDEFG"), index=None,
-                          placeholder="Select a loan grade")
-    acc_s  = c1.text_input("Accounts opened (24m) *", placeholder="ex: 2")
+                         placeholder="Select a loan grade")
+    acc_s = c1.text_input("Accounts opened (24m) *", placeholder="ex: 2")
     fico_s = c1.text_input("FICO Score *", placeholder="300–850")
 
     term = c2.selectbox("Loan Term (months) *", [36, 60], index=None,
-                          placeholder="Select a term")
+                        placeholder="Select a term")
     dti_s = c2.text_input("Debt-to-Income Ratio (%) *", placeholder="ex: 15.0")
 
     st.form_submit_button(btn_label, on_click=start_submit,
@@ -129,10 +127,8 @@ if st.button("Reset form", key="reset_top"):
     st.session_state["force_blank"] = True
     st.rerun()
 
-if st.session_state.get("last_result") and st.session_state.get("just_finished"):
-    res = st.session_state["last_result"]
-    st.session_state.just_finished = False 
-
+res = st.session_state.get("last_result")
+if res:
     pd, thr, delta = res["pd"], res["thr"], res["delta"]
     policy, near = res["policy"], res["near"]
     pred_rc = res["rc"]
@@ -170,7 +166,7 @@ if st.session_state.should_run:
     dti = to_float(dti_s or "")
     fico = to_int(fico_s or "")
     if acc is None or acc<0: errors.append("Accounts opened must be non-negative integer.")
-    if dti is None or dti<0:errors.append("Debt-to-Income must be non-negative number.")
+    if dti is None or dti<0: errors.append("Debt-to-Income must be non-negative number.")
     if fico is None or not 300<=fico<=850: errors.append("FICO must be 300–850.")
     if errors:
         for e in errors: st.error(e)
