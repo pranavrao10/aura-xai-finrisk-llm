@@ -71,6 +71,7 @@ def get_session():
     s.mount("https://", adapter); s.mount("http://", adapter)
     return s
 
+chip_slot = st.empty()
 def render_chip(ok: bool, latency: float):
     html = (
         "<div class='health-chip ok'><span class='dot'></span></div>"
@@ -93,17 +94,19 @@ def save_and_rerun(result_dict: dict):
     st.session_state.submitting = False
     st.rerun()
 
-to_int = lambda s: int(s) if (s:=s.strip()) else None
+to_int = lambda s: int(s)   if (s:=s.strip()) else None
 to_float = lambda s: float(s) if (s:=s.strip()) else None
+
+GRADE_KEY = "grade_in"
+TERM_KEY  = "term_in"
+ACC_KEY   = "acc_in"
+DTI_KEY   = "dti_in"
+FICO_KEY  = "fico_in"
 
 if "submitting" not in st.session_state: st.session_state.submitting = False
 if "should_run" not in st.session_state: st.session_state.should_run = False
 if "form_key" not in st.session_state: st.session_state.form_key = "f_" + uuid.uuid4().hex
-if "force_blank" in st.session_state:
-    st.session_state.form_key = "f_" + uuid.uuid4().hex
-    del st.session_state["force_blank"]
 
-chip_slot = st.empty()
 ok, _, lat, _ = cached_health(API_URL)
 render_chip(ok, lat)
 
@@ -111,21 +114,24 @@ btn_label = "Running…" if st.session_state.submitting else "Run Assessment"
 with st.form(key=st.session_state.form_key):
     c1, c2 = st.columns(2)
     grade = c1.selectbox("Loan Grade *", list("ABCDEFG"), index=None,
-                         placeholder="Select a loan grade")
-    acc_s = c1.text_input("Accounts opened (24m) *", placeholder="ex: 2")
-    fico_s = c1.text_input("FICO Score *", placeholder="300–850")
+                         placeholder="Select a loan grade", key=GRADE_KEY)
+    acc_s = c1.text_input("Accounts opened (24m) *", placeholder="ex: 2", key=ACC_KEY)
+    fico_s = c1.text_input("FICO Score *", placeholder="300–850", key=FICO_KEY)
 
     term = c2.selectbox("Loan Term (months) *", [36, 60], index=None,
-                        placeholder="Select a term")
-    dti_s = c2.text_input("Debt-to-Income Ratio (%) *", placeholder="ex: 15.0")
+                        placeholder="Select a term", key=TERM_KEY)
+    dti_s = c2.text_input("Debt-to-Income Ratio (%) *", placeholder="ex: 15.0", key=DTI_KEY)
 
     st.form_submit_button(btn_label, on_click=start_submit,
                           disabled=st.session_state.submitting)
 
-if st.button("Reset form", key="reset_top"):
-    st.session_state.clear()
-    st.session_state["force_blank"] = True
+def reset_form_only():
+    for k in [GRADE_KEY, TERM_KEY, ACC_KEY, DTI_KEY, FICO_KEY, "last_result"]:
+        st.session_state.pop(k, None)
+    st.session_state.form_key = "f_" + uuid.uuid4().hex
     st.rerun()
+
+st.button("Reset form", key="reset_top", on_click=reset_form_only)
 
 res = st.session_state.get("last_result")
 if res:
@@ -139,7 +145,7 @@ if res:
     c2.metric("Threshold", f"{thr:.2%}")
     c3.metric("Δ vs Threshold", f"{delta:.2%}")
 
-    rc_map={"low":"low","medium":"medium","moderate":"medium","high":"high"}
+    rc_map = {"low":"low","medium":"medium","moderate":"medium","high":"high"}
     st.markdown(
         f"**Risk Class:** "
         f"<span class='pill {rc_map.get(pred_rc,'medium')}'>{pred_rc.title()}</span>",
@@ -160,20 +166,26 @@ if st.session_state.should_run:
     st.session_state.should_run = False
 
     errors=[]
-    if grade is None: errors.append("Loan Grade is required.")
-    if term is None: errors.append("Loan Term is required.")
-    acc = to_int(acc_s or "")
-    dti = to_float(dti_s or "")
-    fico = to_int(fico_s or "")
-    if acc is None or acc<0: errors.append("Accounts opened must be non-negative integer.")
-    if dti is None or dti<0: errors.append("Debt-to-Income must be non-negative number.")
-    if fico is None or not 300<=fico<=850: errors.append("FICO must be 300–850.")
+    if st.session_state.get(GRADE_KEY) is None: errors.append("Loan Grade is required.")
+    if st.session_state.get(TERM_KEY)  is None: errors.append("Loan Term is required.")
+    acc  = to_int(str(st.session_state.get(ACC_KEY) or ""))
+    dti  = to_float(str(st.session_state.get(DTI_KEY) or ""))
+    fico = to_int(str(st.session_state.get(FICO_KEY) or ""))
+
+    if acc is None or acc < 0: errors.append("Accounts opened must be non-negative integer.")
+    if dti is None or dti < 0: errors.append("Debt-to-Income must be non-negative number.")
+    if fico is None or not 300 <= fico <= 850: errors.append("FICO must be 300–850.")
     if errors:
         for e in errors: st.error(e)
         halt()
 
-    payload = {"grade":grade,"term":term,
-               "acc_open_past_24mths":acc,"dti":dti,"fico_mid":fico}
+    payload = {
+        "grade": st.session_state[GRADE_KEY],
+        "term":  st.session_state[TERM_KEY],
+        "acc_open_past_24mths": acc,
+        "dti": dti,
+        "fico_mid": fico
+    }
 
     sess = get_session()
     rid = uuid.uuid4().hex
@@ -181,38 +193,39 @@ if st.session_state.should_run:
     try:
         with st.spinner("Scoring and generating explanation…"):
             r = sess.post(f"{API_URL}/predict_explain",
-                          json=payload, headers={"X-Request-ID":rid},
+                          json=payload, headers={"X-Request-ID": rid},
                           timeout=(5,60))
-        elapsed = time.perf_counter()-t0
+        elapsed = time.perf_counter() - t0
 
-        if r.status_code==400:
-            st.error(f"Input error: {r.json().get('detail',r.text)}"); halt()
-        if r.status_code==429:
+        if r.status_code == 400:
+            st.error(f"Input error: {r.json().get('detail', r.text)}"); halt()
+        if r.status_code == 429:
             st.error("Rate limit exceeded. Try again."); halt()
-        if not (200<=r.status_code<300):
+        if not (200 <= r.status_code < 300):
             st.error(f"API error {r.status_code}: {r.text[:800]}"); halt()
 
         data = r.json()
         pred = data.get("prediction")
         exp = (data.get("explanation") or {}).get("narrative")
-        if not pred: st.error("API response missing 'prediction'."); halt()
+        if not pred:
+            st.error("API response missing 'prediction'."); halt()
 
         pd = float(pred["prob_default"])
         thr = float(pred["threshold"])
         delta = float(pred["threshold_delta"])
-        policy= pred["threshold_policy"]
+        policy = pred["threshold_policy"]
         near = bool(pred["near_threshold_flag"])
         rc = pred["risk_class"].lower()
 
         save_and_rerun({
-            "pred":pred,"exp":exp,
-            "pd":pd,"thr":thr,"delta":delta,
-            "policy":policy,"near":near,"rc":rc
+            "pred": pred, "exp": exp,
+            "pd": pd, "thr": thr, "delta": delta,
+            "policy": policy, "near": near, "rc": rc
         })
 
     except requests.exceptions.ConnectTimeout:
         st.error("Connection timed out."); halt()
     except requests.exceptions.ReadTimeout:
-        st.error("API took too long.");   halt()
+        st.error("API took too long."); halt()
     except requests.exceptions.RequestException as e:
-        st.error(f"Network error: {e}");  halt()
+        st.error(f"Network error: {e}"); halt()
