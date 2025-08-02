@@ -45,6 +45,8 @@ data/tmp/
 /chroma_store/
 /logs
 /data/reg_docs/*
+!data/chroma_db/
+!data/chroma_db/**
 
 *.npz
 *.npy
