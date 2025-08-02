@@ -11,6 +11,7 @@ from aura.app.config import (
     near_threshold_band,
     regulation_whitelist 
 )
+from .rag import search_regs, format_citations
 
 class MissingAPIKey(RuntimeError):
     pass
@@ -28,7 +29,7 @@ Explain WHY the model classified this applicant’s probability of default as Hi
 
 **PRIORITIES**
 1. Factual accuracy based on supplied fields.
-2. Regulatory correctness (use references only from provided {regulation_whitelist}).
+2. Regulatory correctness.
 3. Clarity & brevity for trained analysts.
 4. Compliant, concise, and audit ready explanations.
 5. Prefer plain English feature names instead of internal/engineered names.
@@ -38,11 +39,12 @@ Explain WHY the model classified this applicant’s probability of default as Hi
 -Return **markdown only**. No JSON, code, or tables. Each section below should be a separate paragraph.
 - Opening sentence: State probability (as %), threshold (%), delta, risk class. Give a short summary of the risk assessment. 
 - Five factor deep-dive – one bullet per UI feature.  
-   • Include applicant value, percentile (ex: “85th pct”), risk direction (↑/↓), and qualitative magnitude.  
-   • Explain *how* and *why* each factor contributes.  
+    • Include applicant value, percentile (ex: “85th pct”), risk direction (↑/↓), and qualitative magnitude.  
+    • Explain *how* and *why* each factor contributes.  
 - Regulatory anchors:  
-   • “This assessment complies with [<citation>].”  
-   • Choose at least one citation from the whitelist provided. Pick ECOA if in doubt. Provide exact citations in the required format.
+    • Use the retrieved snippets (provided in the user payload) as anchors; prefer human-readable citations; only cite regulations that meaningfully relate to the factors.
+    • Include a sentence like: “This assessment complies with [<citation>].”
+    • If in doubt, cite ECOA/Reg B; stay within the provided whitelist in the user payload.
 - Actionable next steps – 1-2 brief recommendations (validation, documentation, underwriting check, etc.).  
 - End with a brief model-limitation sentence and: “A human credit officer must review before any final decision.”    
 
@@ -97,9 +99,24 @@ def build_user_prompt(pred_bundle: Dict[str, Any]) -> str:
         "raw_features": raw_feats,
         "factors": cleaned_reasons,
         "generated_at": pred_bundle["timestamp"],
-        "model_version": pred_bundle["model_version"]
+        "model_version": pred_bundle["model_version"],
+        "retrieved_citations_markdown": retrieved_citations_markdown,
+        "regulation_whitelist": regulation_whitelist
     }
     return json.dumps(payload, ensure_ascii=False)
+
+def make_reg_query(bundle: Dict[str, Any]) -> str:
+    parts = [
+        f"risk_class={bundle.get('risk_class')}",
+        f"policy={bundle.get('threshold_policy', 'policy')}",
+    ]
+    reasons = bundle.get("top_local_shap") or []
+    for r in reasons:
+        ftr = r.get("feature")
+        if ftr:
+            parts.append(str(ftr))
+    return " ; ".join(parts)
+
 
 def call_llm(prompt: str, temperature: float = 0.25, max_tokens: int = 1000) -> str:
     if not OPENAI_API_KEY:
@@ -124,7 +141,15 @@ def save_explanation_log(record: Dict[str, Any], path="logs/explanations.log"):
 
 
 def generate_explanation(pred_bundle: Dict[str, Any], retries: int = 2) -> Dict[str, Any]:
-    prompt = build_user_prompt(pred_bundle)
+    reg_query = make_reg_query(pred_bundle)
+    snippets = []
+    try:
+        snippets = search_regs(reg_query, k=4)
+    except Exception as e:
+        snippets = []
+    reg_block = format_citations(snippets) if snippets else "No relevant snippets found."
+
+    prompt = build_user_prompt(pred_bundle, reg_block)
     last_err = None
     for _ in range(retries+1):
         try:
@@ -134,6 +159,8 @@ def generate_explanation(pred_bundle: Dict[str, Any], retries: int = 2) -> Dict[
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "prediction": pred_bundle,
+                "retrieval_query": reg_query,
+                "retrieval_hits": snippets,
                 "narrative": narrative
             }
             save_explanation_log(record)
@@ -145,6 +172,7 @@ def generate_explanation(pred_bundle: Dict[str, Any], retries: int = 2) -> Dict[
     err_record = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "prediction": pred_bundle,
+        "retrieval_query": reg_query,
         "error": str(last_err)
     }
     save_explanation_log(err_record)

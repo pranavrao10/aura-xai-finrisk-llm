@@ -33,7 +33,9 @@ ui = [
 
 rag = [
   "chromadb>=0.4",
-  "tiktoken>=0.5"
+  "tiktoken>=0.5",
+  "pypdf>=4.2",
+  "tenacity>=8.2"
 ]
 
 dev = [

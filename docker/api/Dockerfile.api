@@ -6,14 +6,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential python3-dev cython3 gfortran libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
-
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY models ./models
+COPY data/chroma_db ./data/chroma_db
 
 RUN python -m venv /venv \
  && /venv/bin/pip install --upgrade pip wheel setuptools \
- && /venv/bin/pip wheel .[api] --wheel-dir /wheels
+ && /venv/bin/pip wheel .[api,rag] --wheel-dir /wheels
 
 FROM python:3.12-slim AS api-runtime
 ENV PATH="/venv/bin:$PATH" \
@@ -30,6 +30,7 @@ RUN pip install /wheels/* && rm -rf /wheels
 
 COPY src/ ./src/
 COPY models/ ./models/
+COPY --from=api-builder /app/data/chroma_db ./data/chroma_db
 COPY docker/api/start_api.sh /usr/local/bin/start_api.sh
 
 RUN useradd -ms /bin/bash appuser \
