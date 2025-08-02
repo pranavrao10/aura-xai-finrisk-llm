@@ -42,7 +42,7 @@ Explain WHY the model classified this applicant’s probability of default as Hi
     • Include applicant value, percentile (ex: “85th pct”), risk direction (↑/↓), and qualitative magnitude.  
     • Explain *how* and *why* each factor contributes.  
 - Regulatory anchors:  
-    • Use the retrieved snippets (provided in the user payload) as anchors; prefer human-readable citations; only cite regulations that meaningfully relate to the factors.
+    • Use the retrieved snippets (field: retrieved_citations_markdown) as anchors; prefer human-readable citations; Quote at least one short excerpt (1–2 sentences) when relevant.
     • Include a sentence like: “This assessment complies with [<citation>].”
     • If in doubt, cite ECOA/Reg B; stay within the provided whitelist in the user payload.
 - Actionable next steps – 1-2 brief recommendations (validation, documentation, underwriting check, etc.).  

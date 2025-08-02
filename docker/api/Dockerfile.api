@@ -21,6 +21,10 @@ ENV PATH="/venv/bin:$PATH" \
     PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
+ENV CHROMA_PERSIST_DIR=/app/data/chroma_db
+ENV CHROMA_COLLECTION_NAME=regs_v1
+
+
 RUN apt-get update && apt-get install -y --no-install-recommends bash curl \
     && rm -rf /var/lib/apt/lists/*
 
