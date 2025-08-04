@@ -12,7 +12,8 @@
 6. [Explainability Layer](#explainability-layer)
 7. [Regulatory Context](#regulatory-context)
 8. [Reproducibility & Running the App](#reproducibility--running-the-app)
-   - [Quick Start with Docker (Recommended)](#quick-start-with-docker-recommended)
+   - [Accessing Live Demo (Recommended)](#accessing-live-demo)
+   - [Quick Start with Docker](#quick-start-with-docker)
    - [Local Dev Setup](#local-dev-setup)
 9. [Testing](#testing)
 10. [Contributors](#contributors)
@@ -174,10 +175,10 @@ Issued jointly by Federal Reserve, FDIC, and OCC
 - Unfair or Deceptive Acts or Practices and Unfair, Deceptive, or Abusive Acts or Practices (UDAAP/UDAP)
 Office of the Comptroller of the Currency (OCC) Comptroller’s Handbook
 
--Retail Lending
+- Retail Lending
 OCC Comptroller’s Handbook booklet on supervisory guidelines for retail lending
 
--SR Letter 11‑7
+- SR Letter 11‑7
 “Guidance on Model Risk Management” issued by the Federal Reserve Board
 
 - 12 CFR Part 1002.9 (ECOA Regulation B)
